@@ -1,0 +1,12 @@
+{application,erlang_pbc,
+ [{description,"NIF for pairing based cryptography"},
+  {vsn,"git"},
+  {registered,[]},
+  {applications,[kernel,stdlib]},
+  {env,[]},
+
+  %% hex.pm packaging:
+  {licenses, ["Apache 2.0"]},
+  {maintainers, ["Helium"]},
+  {links, [{"Github", "https://github.com/helium/erlang_pbc"}]}
+]}.
