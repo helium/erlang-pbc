@@ -7,15 +7,31 @@
  * https://www.openssl.org/source/license.html
  */
 
+#define PBC_DEBUG 1
 #include "erl_nif.h"
 #include <pbc/pbc.h>
 #include <string.h>
+#include <stdbool.h>
 
 static ErlNifResourceType *PBC_GROUP_RESOURCE;
+static ErlNifResourceType *PBC_ELEMENT_RESOURCE;
 
 static ERL_NIF_TERM atom_undefined;
 static ERL_NIF_TERM atom_enomem;
 static ERL_NIF_TERM atom_enotsup;
+
+struct pbc_group {
+    pairing_t pairing;
+    bool initialized;
+};
+
+struct pbc_element {
+    element_t element;
+    element_pp_t pp;
+    bool initialized;
+    bool pp_initialized;
+    struct pbc_group *group;
+};
 
 static ERL_NIF_TERM
 mk_atom(ErlNifEnv * env, const char * atom)
@@ -54,33 +70,147 @@ group_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     param_buf[bin.size] = '\0';
 
     // allocate the resource
-    pairing_t* group = enif_alloc_resource(PBC_GROUP_RESOURCE, sizeof(pairing_t));
+    struct pbc_group* group = enif_alloc_resource(PBC_GROUP_RESOURCE, sizeof(struct pbc_group));
     // initialize the group
-    int res = pairing_init_set_str(*group, param_buf);
-    // always release the resource, BEAM will GC it
-    enif_release_resource(group);
+    int res = pairing_init_set_str(group->pairing, param_buf);
     if (res != 0) {
+        group->initialized = false;
+        // always release the resource, BEAM will GC it
+        enif_release_resource(group);
         // params were bad, sorry
         return enif_raise_exception(env, atom_enotsup);
     }
+    group->initialized = true;
     // return a resource handle to Erlang
-    return enif_make_resource(env, group);
+    ERL_NIF_TERM term = enif_make_resource(env, group);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(group);
+    return term;
+}
+
+static ERL_NIF_TERM
+pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    // check the group is G1, G2, GT or Zr
+    char groupname[3];
+    if (!enif_get_atom(env, argv[0], groupname, 3, ERL_NIF_LATIN1)) {
+        return enif_make_badarg(env);
+    }
+
+
+    if (strncmp("G1", groupname, 2) != 0 && strncmp("G2", groupname, 2) != 0 && strncmp("GT", groupname, 2) != 0 && strncmp("Zr", groupname, 2) != 0) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_group *group;
+    if (!enif_get_resource(env, argv[1], PBC_GROUP_RESOURCE, (void**)&group)) {
+        return enif_make_badarg(env);
+    }
+
+    // increment the reference count on the group
+    enif_keep_resource(group);
+
+    struct pbc_element* element = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+
+    if (strncmp("G1", groupname, 2) == 0) {
+        element_init_G1(element->element, group->pairing);
+    } else if (strncmp("G2", groupname, 2) == 0) {
+        element_init_G2(element->element, group->pairing);
+    } else if (strncmp("GT", groupname, 2) == 0) {
+        element_init_GT(element->element, group->pairing);
+    } else if (strncmp("Zr", groupname, 2) == 0) {
+        element_init_Zr(element->element, group->pairing);
+    }
+
+    element->initialized = true;
+    element->group = group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element);
+    return term;
+}
+
+static ERL_NIF_TERM
+pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+    element_init_same_as(element_new->element, element->element);
+    element_random(element_new->element);
+
+    // increment the reference count on the group
+    enif_keep_resource(element->group);
+
+    element_new->initialized = true;
+    element_new->group = element->group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element_new);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element_new);
+    return term;
+}
+
+
+static ERL_NIF_TERM
+pbc_element_to_string(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    char buf[2048];
+    element_snprint(buf, 2048, element->element);
+    buf[2047] = '\0';
+    return enif_make_string(env, buf, ERL_NIF_LATIN1);
 }
 
 void group_destructor(ErlNifEnv *env, void *res) {
     (void)env;
-    pairing_clear(*((pairing_t*) res));
+    struct pbc_group *group = (struct pbc_group *) res;
+    if (group->initialized) {
+        pairing_clear(group->pairing);
+    }
+}
+
+void element_destructor(ErlNifEnv *env, void *res) {
+    (void)env;
+    struct pbc_element *element = (struct pbc_element *) res;
+    if (element->initialized) {
+        // decrement reference count
+        enif_release_resource(element->group);
+        element_clear(element->element);
+    }
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"group_new", 1, group_new, 0},
+    {"group_new_nif", 1, group_new, 0},
     /*{"element_set", 1, element_new, 0},*/
     /*{"element_from_hash", 1, element_new, 0},*/
     /*{"element_random", 1, element_new, 0},*/
     /*{"element_mul", 1, element_new, 0},*/
     /*{"element_add", 1, element_new, 0},*/
     /*{"element_sub", 1, element_new, 0},*/
-    /*{"element_new", 1, element_new, 0}};*/
+    {"element_new", 2, pbc_element_new, 0},
+    {"element_random", 1, pbc_element_random, 0},
+    {"element_to_string", 1, pbc_element_to_string, 0}
     };
 
 static int
@@ -94,6 +224,7 @@ load(ErlNifEnv * env, void ** priv_data, ERL_NIF_TERM load_info)
     pbc_set_memory_functions(&enif_alloc, &enif_realloc, &enif_free);
     int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
     PBC_GROUP_RESOURCE = enif_open_resource_type(env, NULL, "pbc_group", group_destructor, flags, NULL);
+    PBC_ELEMENT_RESOURCE = enif_open_resource_type(env, NULL, "pbc_group", element_destructor, flags, NULL);
     return 0;
 }
 
