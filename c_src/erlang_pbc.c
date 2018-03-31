@@ -268,38 +268,42 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     return term;
 }
 
-/*static ERL_NIF_TERM*/
-/*pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])*/
-/*{*/
-    /*if (argc != 2) {*/
-        /*return enif_make_badarg(env);*/
-    /*}*/
+static ERL_NIF_TERM
+pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
 
-    /*struct pbc_element *element_a;*/
-    /*if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element_a)) {*/
-        /*return enif_make_badarg(env);*/
-    /*}*/
+    struct pbc_element *element_a;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element_a)) {
+        return enif_make_badarg(env);
+    }
 
-    /*ErlNifBinary bin;*/
-    /*if (!enif_inspect_binary(env, term, &bin)) {*/
-        /*return enif_make_badarg(env);*/
-    /*}*/
+    ErlNifBinary bin;
+    if (!enif_inspect_binary(env, argv[1], &bin)) {
+        return enif_make_badarg(env);
+    }
 
-    /*struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));*/
-    /*element_init_same_as(element_new->element, element_a->element);*/
-    /*element_pow_zn(element_new->element, element_a->element, element_b->element);*/
+    mpz_t n;
+    mpz_init(n);
+    mpz_import(n, bin.size/4, 1, 4, 1, 0, bin.data);
 
-    /*// increment the reference count on the group*/
-    /*enif_keep_resource(element_a->group);*/
+    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+    element_init_same_as(element_new->element, element_a->element);
+    element_pow_mpz(element_new->element, element_a->element, n);
 
-    /*element_new->initialized = true;*/
-    /*element_new->group = element_a->group;*/
+    // increment the reference count on the group
+    enif_keep_resource(element_a->group);
 
-    /*ERL_NIF_TERM term = enif_make_resource(env, element_new);*/
-    /*// always release the resource, BEAM will GC it when nobody is using it anymore*/
-    /*enif_release_resource(element_new);*/
-    /*return term;*/
-/*}*/
+    element_new->initialized = true;
+    element_new->group = element_a->group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element_new);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element_new);
+    return term;
+}
 
 static ERL_NIF_TERM
 pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
@@ -409,6 +413,7 @@ static ErlNifFunc nif_funcs[] = {
     {"element_sub", 2, pbc_element_sub, 0},
     {"element_mul", 2, pbc_element_mul, 0},
     {"element_div", 2, pbc_element_div, 0},
+    {"element_pow_mpz_nif", 2, pbc_element_pow_mpz, 0},
     {"element_pow_zn", 2, pbc_element_pow_zn, 0},
     /*{"element_sub", 1, element_new, 0},*/
     {"element_new", 2, pbc_element_new, 0},

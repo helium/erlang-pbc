@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow_zn/2]).
+-export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow_zn/2, element_pow_mpz/2]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_pbc).
@@ -35,6 +35,20 @@ group_new('SS512') ->
 group_new(Other) ->
     group_new_nif(Other).
 
+element_pow_mpz(E, X) when is_integer(X) ->
+    %% TODO pass in a flag if the number is negative
+    P = pack_int(X, []),
+    S = bit_size(P),
+    <<X:S/integer-unsigned-big>> = P,
+    element_pow_mpz_nif(E, P).
+
+pack_int(X, Acc) when X < 4294967296 ->
+    list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);
+pack_int(X, Acc) ->
+    Y = X bsr 32,
+    Z = X band 16#ffffffff,
+    pack_int(Y, [<<Z:32/integer-unsigned-big>>|Acc]).
+
 % This is just a simple place holder. It mostly shouldn't ever be called
 % unless there was an unexpected error loading the NIF shared library.
 
@@ -63,6 +77,9 @@ element_div(_, _) ->
     not_loaded(?LINE).
 
 element_pow_zn(_, _) ->
+    not_loaded(?LINE).
+    
+element_pow_mpz_nif(_, _) ->
     not_loaded(?LINE).
 
 not_loaded(Line) ->
