@@ -527,6 +527,87 @@ pbc_element_from_hash(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     return term;
 }
 
+static ERL_NIF_TERM
+pbc_element_to_binary(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    int bytes = element_length_in_bytes(element->element);
+
+    ErlNifBinary bin;
+    if (!enif_alloc_binary(bytes, &bin)) {
+        return enif_make_badarg(env);
+    }
+
+    element_to_bytes(bin.data, element->element);
+    return enif_make_binary(env, &bin);
+}
+
+static ERL_NIF_TERM
+pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    mpz_t *r;
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    ErlNifBinary bin;
+    if (!enif_inspect_binary(env, argv[1], &bin)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+    element_init_same_as(element_new->element, element->element);
+    element_from_bytes(element_new->element, bin.data);
+
+    // increment the reference count on the group
+    enif_keep_resource(element->group);
+
+    element_new->initialized = true;
+    element_new->group = element->group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element_new);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element_new);
+    return term;
+}
+
+static ERL_NIF_TERM
+pbc_element_cmp(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element_a;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element_a)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element_b;
+    if (!enif_get_resource(env, argv[1], PBC_ELEMENT_RESOURCE, (void**)&element_b)) {
+        return enif_make_badarg(env);
+    }
+
+    if (element_cmp(element_a->element, element_b->element) == 0) {
+        return mk_atom(env, "true");
+    } else {
+        return mk_atom(env, "false");
+    }
+}
+
 void group_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_group *group = (struct pbc_group *) res;
@@ -559,7 +640,10 @@ static ErlNifFunc nif_funcs[] = {
     {"element_new", 2, pbc_element_new, 0},
     {"element_from_hash_nif", 2, pbc_element_from_hash, 0},
     {"element_random", 1, pbc_element_random, 0},
-    {"element_to_string", 1, pbc_element_to_string, 0}
+    {"element_to_string", 1, pbc_element_to_string, 0},
+    {"element_to_binary", 1, pbc_element_to_binary, 0},
+    {"binary_to_element", 2, pbc_binary_to_element, 0},
+    {"element_cmp", 2, pbc_element_cmp, 0},
     };
 
 static int
