@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow_zn/2, element_pow_mpz/2]).
+-export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_pbc).
@@ -35,12 +35,29 @@ group_new('SS512') ->
 group_new(Other) ->
     group_new_nif(Other).
 
-element_pow_mpz(E, X) when is_integer(X) ->
+element_set(E, X) when is_integer(X) ->
+    element_set_mpz_nif(E, pack_int(X)).
+
+element_pow(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
-    P = pack_int(X, []),
-    S = bit_size(P),
-    <<X:S/integer-unsigned-big>> = P,
-    element_pow_mpz_nif(E, P).
+    element_pow_mpz(E, pack_int(X));
+element_pow(E, X) ->
+    element_pow_zn(E, X).
+
+element_add(E, X) when is_integer(X) ->
+    %% TODO pass in a flag if the number is negative
+    element_add_nif(E, element_set(E, X));
+element_add(E, X) ->
+    element_add_nif(E, X).
+
+element_mul(E, X) when is_integer(X) ->
+    %% TODO pass in a flag if the number is negative
+    element_mul_mpz_nif(E, pack_int(X));
+element_mul(E, X) ->
+    element_mul_nif(E, X).
+
+pack_int(X) ->
+    pack_int(X, []).
 
 pack_int(X, Acc) when X < 4294967296 ->
     list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);
@@ -64,13 +81,16 @@ element_to_string(_) ->
 element_random(_) ->
     not_loaded(?LINE).
 
-element_add(_, _) ->
+element_add_nif(_, _) ->
     not_loaded(?LINE).
 
 element_sub(_, _) ->
     not_loaded(?LINE).
 
-element_mul(_, _) ->
+element_mul_nif(_, _) ->
+    not_loaded(?LINE).
+
+element_mul_mpz_nif(_, _) ->
     not_loaded(?LINE).
 
 element_div(_, _) ->
@@ -79,8 +99,12 @@ element_div(_, _) ->
 element_pow_zn(_, _) ->
     not_loaded(?LINE).
     
-element_pow_mpz_nif(_, _) ->
+element_pow_mpz(_, _) ->
     not_loaded(?LINE).
+
+element_set_mpz_nif(_, _) ->
+    not_loaded(?LINE).
+
 
 not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
