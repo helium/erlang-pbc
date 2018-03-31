@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, element_new/2, element_to_string/1, element_random/1]).
+-export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_pbc).
@@ -48,6 +48,18 @@ element_to_string(_) ->
     not_loaded(?LINE).
 
 element_random(_) ->
+    not_loaded(?LINE).
+
+element_add(_, _) ->
+    not_loaded(?LINE).
+
+element_sub(_, _) ->
+    not_loaded(?LINE).
+
+element_mul(_, _) ->
+    not_loaded(?LINE).
+
+element_div(_, _) ->
     not_loaded(?LINE).
 
 not_loaded(Line) ->
