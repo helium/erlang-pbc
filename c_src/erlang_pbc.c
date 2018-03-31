@@ -557,7 +557,6 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    mpz_t *r;
     struct pbc_element *element;
     if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
         return enif_make_badarg(env);
