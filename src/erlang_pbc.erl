@@ -56,6 +56,18 @@ element_mul(E, X) when is_integer(X) ->
 element_mul(E, X) ->
     element_mul_nif(E, X).
 
+element_sub(E, X) when is_integer(X) ->
+    %% TODO pass in a flag if the number is negative
+    element_sub_nif(E, pack_int(X));
+element_sub(E, X) ->
+    element_sub_nif(E, X).
+
+element_div(E, X) when is_integer(X) ->
+    %% TODO pass in a flag if the number is negative
+    element_div_nif(E, pack_int(X));
+element_div(E, X) ->
+    element_div_nif(E, X).
+
 pack_int(X) ->
     pack_int(X, []).
 
@@ -84,7 +96,7 @@ element_random(_) ->
 element_add_nif(_, _) ->
     not_loaded(?LINE).
 
-element_sub(_, _) ->
+element_sub_nif(_, _) ->
     not_loaded(?LINE).
 
 element_mul_nif(_, _) ->
@@ -93,7 +105,7 @@ element_mul_nif(_, _) ->
 element_mul_mpz_nif(_, _) ->
     not_loaded(?LINE).
 
-element_div(_, _) ->
+element_div_nif(_, _) ->
     not_loaded(?LINE).
 
 element_pow_zn(_, _) ->
