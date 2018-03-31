@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2]).
+-export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2, element_from_hash/2]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_pbc).
@@ -68,6 +68,22 @@ element_div(E, X) when is_integer(X) ->
 element_div(E, X) ->
     element_div_nif(E, X).
 
+element_from_hash(E, {digest, Bin}) when is_binary(Bin) ->
+    %% already a hash, trust the user knows what they're doing
+    element_from_hash_nif(E, Bin);
+element_from_hash(E, Bin) when is_binary(Bin) ->
+    %% ok, we need to hash it in some magic way
+    %% TODO charm uses the first 2 bytes to hold block size and hash prefix
+    Order = group_order(E),
+    case Order < 256 of
+        true ->
+            %% ok, we have enough bits in the hash to satisfy the group order
+            element_from_hash_nif(E, crypto:hash(sha256, Bin));
+        false ->
+            %% TODO apply variable size hash technique
+            erlang:error(not_implemented_yet)
+    end.
+
 pack_int(X) ->
     pack_int(X, []).
 
@@ -80,6 +96,9 @@ pack_int(X, Acc) ->
 
 % This is just a simple place holder. It mostly shouldn't ever be called
 % unless there was an unexpected error loading the NIF shared library.
+
+group_order(_) ->
+    not_loaded(?LINE).
 
 group_new_nif(_) ->
     not_loaded(?LINE).
@@ -117,6 +136,8 @@ element_pow_mpz(_, _) ->
 element_set_mpz_nif(_, _) ->
     not_loaded(?LINE).
 
+element_from_hash_nif(_, _) ->
+    not_loaded(?LINE).
 
 not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
