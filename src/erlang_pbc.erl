@@ -85,7 +85,15 @@ element_from_hash(E, Bin) when is_binary(Bin) ->
     end.
 
 pack_int(X) ->
-    pack_int(X, []).
+    Int = pack_int(abs(X), []),
+    %% first byte is a sign byte
+    Sign = case X < 0 of
+               true ->
+                   16#ff;
+               false ->
+                   0
+           end,
+    <<Sign:8/integer-unsigned, Int/binary>>.
 
 pack_int(X, Acc) when X < 4294967296 ->
     list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);

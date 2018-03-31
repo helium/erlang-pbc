@@ -223,6 +223,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
+    /*element_printf("Mul %B * %B \n", element_a->element, element_b->element);*/
     element_mul(element_new->element, element_a->element, element_b->element);
     /*element_printf("Mul %B * %B = %B\n", element_a->element, element_b->element, element_new->element);*/
 
@@ -257,7 +258,10 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     mpz_t n;
     mpz_init(n);
-    mpz_import(n, bin.size/4, 1, 4, 1, 0, bin.data);
+    mpz_import(n, (bin.size - 1)/4, 1, 4, 1, 0, bin.data+1);
+    if (bin.data[0] == 0xff) {
+        mpz_neg(n, n);
+    }
     /*printf("SET ELEMENT TO");*/
     /*mpz_out_str(NULL, 10, n);*/
     /*printf("\n");*/
@@ -300,7 +304,14 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     mpz_t n;
     mpz_init(n);
-    mpz_import(n, bin.size/4, 1, 4, 1, 0, bin.data);
+    mpz_import(n, (bin.size - 1)/4, 1, 4, 1, 0, bin.data+1);
+    if (bin.data[0] == 0xff) {
+        mpz_neg(n, n);
+    }
+    /*printf("MUL ELEMENT BY");*/
+    /*mpz_out_str(NULL, 10, n);*/
+    /*printf("\n");*/
+
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
@@ -371,7 +382,13 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     mpz_t n;
     mpz_init(n);
-    mpz_import(n, bin.size/4, 1, 4, 1, 0, bin.data);
+    mpz_import(n, (bin.size - 1)/4, 1, 4, 1, 0, bin.data+1);
+    if (bin.data[0] == 0xff) {
+        mpz_neg(n, n);
+    }
+    /*printf("POW ELEMENT BY");*/
+    /*mpz_out_str(NULL, 10, n);*/
+    /*printf("\n");*/
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
