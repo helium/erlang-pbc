@@ -31,8 +31,8 @@ else ifeq ($(UNAME_SYS), FreeBSD)
 	LDFLAGS += -shared
 else ifeq ($(UNAME_SYS), Linux)
 	CC ?= gcc
-	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -finline-functions -Wall
+	CFLAGS ?= -O0 -g3 -ggdb -std=c99 -finline-functions -Wall -Wmissing-prototypes
+	CXXFLAGS ?= -O0 -g3 -ggdb -finline-functions -Wall
 	LDFLAGS += -shared
 endif
 

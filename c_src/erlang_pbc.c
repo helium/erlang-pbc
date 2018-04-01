@@ -7,7 +7,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-//#define PBC_DEBUG 1
+#define PBC_DEBUG 1
 #include "erl_nif.h"
 #include <pbc/pbc.h>
 #include <string.h>
@@ -247,7 +247,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
-    /*element_printf("Mul %B * %B \n", element_a->element, element_b->element);*/
+    element_printf("Mul %B * %B \n", element_a->element, element_b->element);
     element_mul(element_new->element, element_a->element, element_b->element);
     /*element_printf("Mul %B * %B = %B\n", element_a->element, element_b->element, element_new->element);*/
 
@@ -287,16 +287,16 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (bin.data[0] == 0xff) {
         mpz_neg(n, n);
     }
-    /*printf("SET ELEMENT TO");*/
-    /*mpz_out_str(NULL, 10, n);*/
-    /*printf("\n");*/
+    printf("SET ELEMENT TO ");
+    mpz_out_str(NULL, 10, n);
+    printf("\n");
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_set_mpz(element_new->element, n);
-    mpz_clear(n);
+    /*mpz_clear(n);*/
     
-    /*element_printf("set %B to %B\n", element_a->element, element_new->element);*/
+    element_printf("set %B to %B\n", element_a->element, element_new->element);
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -334,9 +334,9 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (bin.data[0] == 0xff) {
         mpz_neg(n, n);
     }
-    /*printf("MUL ELEMENT BY");*/
-    /*mpz_out_str(NULL, 10, n);*/
-    /*printf("\n");*/
+    printf("MUL ELEMENT BY ");
+    mpz_out_str(NULL, 10, n);
+    printf("\n");
 
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
@@ -424,7 +424,11 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
-    element_pow_mpz(element_new->element, element_a->element, n);
+    if (element_a->pp_initialized) {
+        element_pp_pow(element_new->element, n, element_a->pp);
+    } else {
+        element_pow_mpz(element_new->element, element_a->element, n);
+    }
     mpz_clear(n);
 
     // increment the reference count on the group
@@ -459,7 +463,11 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
-    element_pow_zn(element_new->element, element_a->element, element_b->element);
+    if (element_a->pp_initialized) {
+        element_pp_pow_zn(element_new->element, element_b->element, element_a->pp);
+    } else {
+        element_pow_zn(element_new->element, element_a->element, element_b->element);
+    }
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -516,9 +524,9 @@ pbc_element_to_string(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    char buf[2048];
-    element_snprint(buf, 2048, element->element);
-    buf[2047] = '\0';
+    char buf[4096];
+    element_snprint(buf, 4096, element->element);
+    buf[4095] = '\0';
     return enif_make_string(env, buf, ERL_NIF_LATIN1);
 }
 
