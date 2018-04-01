@@ -20,6 +20,9 @@ static ERL_NIF_TERM atom_undefined;
 static ERL_NIF_TERM atom_group_mismatch;
 static ERL_NIF_TERM atom_enotsup;
 
+void group_destructor(ErlNifEnv *env, void *res);
+void element_destructor(ErlNifEnv *env, void *res);
+
 struct pbc_group {
     pairing_t pairing;
     bool initialized;
@@ -664,7 +667,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
-    element_init_GT(element_new->element, element_a->group);
+    element_init_GT(element_new->element, element_a->group->pairing);
     // TODO check the ordering and symmetry
     element_pairing(element_new->element, element_a->element, element_b->element);
 
