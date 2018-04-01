@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2]).
+-export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1]).
 -on_load(init/0).
 
 -define(APPNAME, erlang_pbc).
@@ -175,6 +175,12 @@ element_cmp(_, _) ->
     not_loaded(?LINE).
 
 element_pairing(_, _) ->
+    not_loaded(?LINE).
+
+pairing_is_symmetric(_) ->
+    not_loaded(?LINE).
+
+element_pp_init(_) ->
     not_loaded(?LINE).
 
 not_loaded(Line) ->

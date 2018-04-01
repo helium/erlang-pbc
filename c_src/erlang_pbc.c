@@ -137,6 +137,7 @@ pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     element->initialized = true;
+    element->pp_initialized = false;
     element->group = group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element);
@@ -176,6 +177,7 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -213,6 +215,7 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -252,6 +255,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -298,6 +302,7 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -343,6 +348,7 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -380,6 +386,7 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -424,6 +431,7 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -457,6 +465,7 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -485,6 +494,7 @@ pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -561,6 +571,7 @@ pbc_element_from_hash(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -617,6 +628,7 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -675,12 +687,54 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
     // always release the resource, BEAM will GC it when nobody is using it anymore
     enif_release_resource(element_new);
     return term;
+}
+
+static ERL_NIF_TERM
+pbc_pairing_is_symmetric(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_group *group;
+    if (!enif_get_resource(env, argv[0], PBC_GROUP_RESOURCE, (void**)&group)) {
+        return enif_make_badarg(env);
+    }
+
+    if (!pairing_is_symmetric(group->pairing) == 0) {
+        return mk_atom(env, "true");
+    } else {
+        return mk_atom(env, "false");
+    }
+}
+
+static ERL_NIF_TERM
+pbc_element_pp_init(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    if (element->pp_initialized) {
+        return mk_atom(env, "ok");
+    }
+
+    element_pp_init(element->pp, element->element);
+    element->pp_initialized = true;
+
+    return mk_atom(env, "ok");
 }
 
 void group_destructor(ErlNifEnv *env, void *res) {
@@ -695,6 +749,9 @@ void element_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_element *element = (struct pbc_element *) res;
     if (element->initialized) {
+        if (element->pp_initialized) {
+            element_pp_clear(element->pp);
+        }
         // decrement reference count
         enif_release_resource(element->group);
         element_clear(element->element);
@@ -720,6 +777,8 @@ static ErlNifFunc nif_funcs[] = {
     {"binary_to_element", 2, pbc_binary_to_element, 0},
     {"element_cmp", 2, pbc_element_cmp, 0},
     {"element_pairing", 2, pbc_element_pairing, 0},
+    {"pairing_is_symmetric", 1, pbc_pairing_is_symmetric, 0},
+    {"element_pp_init", 1, pbc_element_pp_init, 0},
     };
 
 static int
