@@ -17,7 +17,7 @@ static ErlNifResourceType *PBC_GROUP_RESOURCE;
 static ErlNifResourceType *PBC_ELEMENT_RESOURCE;
 
 static ERL_NIF_TERM atom_undefined;
-static ERL_NIF_TERM atom_enomem;
+static ERL_NIF_TERM atom_group_mismatch;
 static ERL_NIF_TERM atom_enotsup;
 
 struct pbc_group {
@@ -107,8 +107,14 @@ pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
+    // all elements know their pairing, so we can use an element to initialize another element in the same pairing, even in a different group
+    struct pbc_element *element_in;
     struct pbc_group *group;
-    if (!enif_get_resource(env, argv[1], PBC_GROUP_RESOURCE, (void**)&group)) {
+    if (enif_get_resource(env, argv[1], PBC_ELEMENT_RESOURCE, (void**)&element_in)) {
+        group = element_in->group;
+    } else if (enif_get_resource(env, argv[1], PBC_GROUP_RESOURCE, (void**)&group)) {
+        // nothing to actually do here, weee
+    } else {
         return enif_make_badarg(env);
     }
 
@@ -153,6 +159,10 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
+    if (element_a->element->field != element_b->element->field) {
+        return enif_raise_exception(env, atom_group_mismatch);
+    }
+
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_add(element_new->element, element_a->element, element_b->element);
@@ -188,6 +198,10 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
+    if (element_a->element->field != element_b->element->field) {
+        return enif_raise_exception(env, atom_group_mismatch);
+    }
+
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_sub(element_new->element, element_a->element, element_b->element);
@@ -219,6 +233,10 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element *element_b;
     if (!enif_get_resource(env, argv[1], PBC_ELEMENT_RESOURCE, (void**)&element_b)) {
         return enif_make_badarg(env);
+    }
+
+    if (element_a->element->field != element_b->element->field) {
+        return enif_raise_exception(env, atom_group_mismatch);
     }
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
@@ -345,6 +363,10 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element *element_b;
     if (!enif_get_resource(env, argv[1], PBC_ELEMENT_RESOURCE, (void**)&element_b)) {
         return enif_make_badarg(env);
+    }
+
+    if (element_a->element->field != element_b->element->field) {
+        return enif_raise_exception(env, atom_group_mismatch);
     }
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
@@ -624,6 +646,40 @@ pbc_element_cmp(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 }
 
+static ERL_NIF_TERM
+pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element_a;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element_a)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element_b;
+    if (!enif_get_resource(env, argv[1], PBC_ELEMENT_RESOURCE, (void**)&element_b)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+    element_init_GT(element_new->element, element_a->group);
+    // TODO check the ordering and symmetry
+    element_pairing(element_new->element, element_a->element, element_b->element);
+
+    // increment the reference count on the group
+    enif_keep_resource(element_a->group);
+
+    element_new->initialized = true;
+    element_new->group = element_a->group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element_new);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element_new);
+    return term;
+}
+
 void group_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_group *group = (struct pbc_group *) res;
@@ -660,6 +716,7 @@ static ErlNifFunc nif_funcs[] = {
     {"element_to_binary", 1, pbc_element_to_binary, 0},
     {"binary_to_element", 2, pbc_binary_to_element, 0},
     {"element_cmp", 2, pbc_element_cmp, 0},
+    {"element_pairing", 2, pbc_element_pairing, 0},
     };
 
 static int
@@ -668,7 +725,7 @@ load(ErlNifEnv * env, void ** priv_data, ERL_NIF_TERM load_info)
     (void)priv_data;
     (void)load_info;
     atom_undefined = enif_make_atom(env, "undefined");
-    atom_enomem    = enif_make_atom(env, "enomem");
+    atom_group_mismatch    = enif_make_atom(env, "group_mismatch");
     atom_enotsup    = enif_make_atom(env, "enotsup");
     pbc_set_memory_functions(&enif_alloc, &enif_realloc, &enif_free);
     int flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
