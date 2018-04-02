@@ -7,7 +7,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-#define PBC_DEBUG 1
+//#define PBC_DEBUG 1
 #include "erl_nif.h"
 #include <pbc/pbc.h>
 #include <string.h>
@@ -167,11 +167,16 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_raise_exception(env, atom_group_mismatch);
     }
 
+#ifdef PBC_DEBUG
+    element_printf("%B + %B ", element_a->element, element_b->element);
+#endif
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_add(element_new->element, element_a->element, element_b->element);
 
-    /*element_printf("Added %B + %B = %B\n", element_a->element, element_b->element, element_new->element);*/
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -207,9 +212,17 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_raise_exception(env, atom_group_mismatch);
     }
 
+#ifdef PBC_DEBUG
+    element_printf("%B - %B ", element_a->element, element_b->element);
+#endif
+
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_sub(element_new->element, element_a->element, element_b->element);
+
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -247,9 +260,13 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
-    element_printf("Mul %B * %B \n", element_a->element, element_b->element);
+#ifdef PBC_DEBUG
+    element_printf("Mul %B * %B ", element_a->element, element_b->element);
+#endif
     element_mul(element_new->element, element_a->element, element_b->element);
-    /*element_printf("Mul %B * %B = %B\n", element_a->element, element_b->element, element_new->element);*/
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -287,16 +304,20 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (bin.data[0] == 0xff) {
         mpz_neg(n, n);
     }
+#ifdef PBC_DEBUG
     printf("SET ELEMENT TO ");
     mpz_out_str(NULL, 10, n);
     printf("\n");
+#endif
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_set_mpz(element_new->element, n);
     /*mpz_clear(n);*/
-    
+
+#ifdef PBC_DEBUG
     element_printf("set %B to %B\n", element_a->element, element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -334,15 +355,19 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (bin.data[0] == 0xff) {
         mpz_neg(n, n);
     }
-    printf("MUL ELEMENT BY ");
+#ifdef PBC_DEBUG
+    element_printf("MUL %B BY ", element_a->element);
     mpz_out_str(NULL, 10, n);
-    printf("\n");
-
+#endif
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_mul_mpz(element_new->element, element_a->element, n);
     mpz_clear(n);
+
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -378,9 +403,15 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_raise_exception(env, atom_group_mismatch);
     }
 
+#ifdef PBC_DEBUG
+    element_printf("%B div %B ", element_a->element, element_b->element);
+#endif
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_div(element_new->element, element_a->element, element_b->element);
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element)
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -418,9 +449,11 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (bin.data[0] == 0xff) {
         mpz_neg(n, n);
     }
-    /*printf("POW ELEMENT BY");*/
-    /*mpz_out_str(NULL, 10, n);*/
-    /*printf("\n");*/
+
+#ifdef PBC_DEBUG
+    element_printf("%B pow ", element_a->element);
+    mpz_out_str(NULL, 10, n);
+#endif
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
@@ -430,6 +463,9 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         element_pow_mpz(element_new->element, element_a->element, n);
     }
     mpz_clear(n);
+#ifdef PBC_DEBUG
+    element_printf(" = %B\n", element_new->element);
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -461,6 +497,10 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
+#ifdef PBC_DEBUG
+    element_printf("%B pow %B ", element_a->element);
+#endif
+
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     if (element_a->pp_initialized) {
@@ -468,6 +508,9 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     } else {
         element_pow_zn(element_new->element, element_a->element, element_b->element);
     }
+#ifdef PBC_DEBUG
+    element_printf("= %B\n", element_new->element)
+#endif
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
@@ -760,9 +803,9 @@ void element_destructor(ErlNifEnv *env, void *res) {
         if (element->pp_initialized) {
             element_pp_clear(element->pp);
         }
+        element_clear(element->element);
         // decrement reference count
         enif_release_resource(element->group);
-        element_clear(element->element);
     }
 }
 
