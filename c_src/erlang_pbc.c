@@ -759,7 +759,7 @@ pbc_pairing_is_symmetric(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    if (!pairing_is_symmetric(group->pairing) == 0) {
+    if (pairing_is_symmetric(group->pairing)) {
         return mk_atom(env, "true");
     } else {
         return mk_atom(env, "false");
