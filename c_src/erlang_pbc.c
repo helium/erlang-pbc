@@ -7,7 +7,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-//#define PBC_DEBUG 1
+/*#define PBC_DEBUG 1*/
 #include "erl_nif.h"
 #include <pbc/pbc.h>
 #include <string.h>
@@ -746,10 +746,29 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
-    element_init_GT(element_new->element, element_a->group->pairing);
-    // TODO check the ordering and symmetry
-    element_pairing(element_new->element, element_a->element, element_b->element);
+    struct pbc_element* element_new = NULL;
+
+    if (pairing_is_symmetric(element_a->group->pairing) && element_a->element->field == element_b->element->field) {
+        // symmetric pairings need both operands in the same field
+        element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+        element_init_GT(element_new->element, element_a->group->pairing);
+        element_pairing(element_new->element, element_a->element, element_b->element);
+    } else if ((!pairing_is_symmetric(element_a->group->pairing)) && element_a->element->field != element_b->element->field) {
+        // assymetric pairings need one element from G1 and one from G2
+        if (element_a->element->field == element_a->group->pairing->G1 && element_b->element->field == element_b->group->pairing->G2) {
+            element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+            element_init_GT(element_new->element, element_a->group->pairing);
+            element_pairing(element_new->element, element_a->element, element_b->element);
+        } else if (element_a->element->field == element_a->group->pairing->G2 && element_b->element->field == element_b->group->pairing->G1) {
+            element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+            element_init_GT(element_new->element, element_a->group->pairing);
+            element_pairing(element_new->element, element_b->element, element_a->element);
+        } else {
+            return enif_raise_exception(env, atom_group_mismatch);
+        }
+    } else {
+        return enif_raise_exception(env, atom_group_mismatch);
+    }
 
     // increment the reference count on the group
     enif_keep_resource(element_a->group);
