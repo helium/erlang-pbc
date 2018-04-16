@@ -2,6 +2,10 @@
 -export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1]).
 -on_load(init/0).
 
+-type element() :: reference().
+
+-export_type([element/0]).
+
 -define(APPNAME, erlang_pbc).
 -define(LIBNAME, erlang_pbc).
 
@@ -72,39 +76,47 @@ group_new('MNT159') ->
 group_new(Other) ->
     group_new_nif(Other).
 
+
+-spec element_set(element(), element() | integer()) -> element().
 element_set(E, X) when is_integer(X) ->
     element_set_mpz_nif(E, pack_int(X)).
 
+-spec element_pow(element(), element() | integer()) -> element().
 element_pow(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
-    element_pow_mpz(E, pack_int(X));
+    element_pow_mpz(E, element_set(E, X));
 element_pow(E, X) ->
     element_pow_zn(E, X).
 
+-spec element_add(element(), element() | integer()) -> element().
 element_add(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
     element_add_nif(E, element_set(E, X));
 element_add(E, X) ->
     element_add_nif(E, X).
 
+-spec element_mul(element(), element() | integer()) -> element().
 element_mul(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
-    element_mul_mpz_nif(E, pack_int(X));
+    element_mul_mpz_nif(E, element_set(E, X));
 element_mul(E, X) ->
     element_mul_nif(E, X).
 
+-spec element_sub(element(), element() | integer()) -> element().
 element_sub(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
-    element_sub_nif(E, pack_int(X));
+    element_sub_nif(E, element_set(E, X));
 element_sub(E, X) ->
     element_sub_nif(E, X).
 
+-spec element_div(element(), element() | integer()) -> element().
 element_div(E, X) when is_integer(X) ->
     %% TODO pass in a flag if the number is negative
-    element_div_nif(E, pack_int(X));
+    element_div_nif(E, element_set(E, X));
 element_div(E, X) ->
     element_div_nif(E, X).
 
+-spec element_from_hash(element(), {digest, binary()} | binary()) -> element().
 element_from_hash(E, {digest, Bin}) when is_binary(Bin) ->
     %% already a hash, trust the user knows what they're doing
     element_from_hash_nif(E, Bin);
@@ -174,7 +186,7 @@ element_div_nif(_, _) ->
 
 element_pow_zn(_, _) ->
     not_loaded(?LINE).
-    
+
 element_pow_mpz(_, _) ->
     not_loaded(?LINE).
 
