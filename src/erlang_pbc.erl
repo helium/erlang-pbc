@@ -133,6 +133,7 @@ element_from_hash(E, Bin) when is_binary(Bin) ->
             erlang:error(not_implemented_yet)
     end.
 
+-spec pack_int(integer()) -> binary().
 pack_int(X) ->
     Int = pack_int(abs(X), []),
     %% first byte is a sign byte
@@ -144,6 +145,7 @@ pack_int(X) ->
            end,
     <<Sign:8/integer-unsigned, Int/binary>>.
 
+-spec pack_int(integer(), list()) -> binary().
 pack_int(X, Acc) when X < 4294967296 ->
     list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);
 pack_int(X, Acc) ->
