@@ -151,19 +151,52 @@ pack_int(X, Acc) ->
 % This is just a simple place holder. It mostly shouldn't ever be called
 % unless there was an unexpected error loading the NIF shared library.
 
+
+%% functions exported directly as NIFs
+-spec group_order(element() | group()) -> integer().
 group_order(_) ->
     not_loaded(?LINE).
 
-group_new_nif(_) ->
-    not_loaded(?LINE).
-
+%% XXX: not sure about this one
+-spec element_new(atom(), group()) -> element().
 element_new(_, _) ->
     not_loaded(?LINE).
 
+-spec element_to_string(element()) -> binary().
 element_to_string(_) ->
     not_loaded(?LINE).
 
+-spec element_random(element()) -> element().
 element_random(_) ->
+    not_loaded(?LINE).
+
+-spec element_to_binary(element()) -> binary().
+element_to_binary(_) ->
+    not_loaded(?LINE).
+
+%% XXX: not sure about this one either
+-spec binary_to_element(binary(), binary()) -> element().
+binary_to_element(_, _) ->
+    not_loaded(?LINE).
+
+-spec element_cmp(element(), element()) -> boolean().
+element_cmp(_, _) ->
+    not_loaded(?LINE).
+
+-spec element_pairing(element(), element()) -> element().
+element_pairing(_, _) ->
+    not_loaded(?LINE).
+
+-spec pairing_is_symmetric(element()) -> boolean().
+pairing_is_symmetric(_) ->
+    not_loaded(?LINE).
+
+-spec element_pp_init(element()) -> no_return().
+element_pp_init(_) ->
+    not_loaded(?LINE).
+
+%% not exported functions
+group_new_nif(_) ->
     not_loaded(?LINE).
 
 element_add_nif(_, _) ->
@@ -191,24 +224,6 @@ element_set_mpz_nif(_, _) ->
     not_loaded(?LINE).
 
 element_from_hash_nif(_, _) ->
-    not_loaded(?LINE).
-
-element_to_binary(_) ->
-    not_loaded(?LINE).
-
-binary_to_element(_, _) ->
-    not_loaded(?LINE).
-
-element_cmp(_, _) ->
-    not_loaded(?LINE).
-
-element_pairing(_, _) ->
-    not_loaded(?LINE).
-
-pairing_is_symmetric(_) ->
-    not_loaded(?LINE).
-
-element_pp_init(_) ->
     not_loaded(?LINE).
 
 not_loaded(Line) ->
