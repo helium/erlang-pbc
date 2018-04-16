@@ -83,35 +83,30 @@ element_set(E, X) when is_integer(X) ->
 
 -spec element_pow(element(), element() | integer()) -> element().
 element_pow(E, X) when is_integer(X) ->
-    %% TODO pass in a flag if the number is negative
     element_pow_mpz(E, element_set(E, X));
 element_pow(E, X) ->
     element_pow_zn(E, X).
 
 -spec element_add(element(), element() | integer()) -> element().
 element_add(E, X) when is_integer(X) ->
-    %% TODO pass in a flag if the number is negative
     element_add_nif(E, element_set(E, X));
 element_add(E, X) ->
     element_add_nif(E, X).
 
 -spec element_mul(element(), element() | integer()) -> element().
 element_mul(E, X) when is_integer(X) ->
-    %% TODO pass in a flag if the number is negative
     element_mul_mpz_nif(E, element_set(E, X));
 element_mul(E, X) ->
     element_mul_nif(E, X).
 
 -spec element_sub(element(), element() | integer()) -> element().
 element_sub(E, X) when is_integer(X) ->
-    %% TODO pass in a flag if the number is negative
     element_sub_nif(E, element_set(E, X));
 element_sub(E, X) ->
     element_sub_nif(E, X).
 
 -spec element_div(element(), element() | integer()) -> element().
 element_div(E, X) when is_integer(X) ->
-    %% TODO pass in a flag if the number is negative
     element_div_nif(E, element_set(E, X));
 element_div(E, X) ->
     element_div_nif(E, X).
