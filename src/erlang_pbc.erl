@@ -157,8 +157,7 @@ pack_int(X, Acc) ->
 group_order(_) ->
     not_loaded(?LINE).
 
-%% XXX: not sure about this one
--spec element_new(atom(), group()) -> element().
+-spec element_new('G1' | 'G2' | 'ZR' | 'GT', element() | group()) -> element().
 element_new(_, _) ->
     not_loaded(?LINE).
 
@@ -174,8 +173,7 @@ element_random(_) ->
 element_to_binary(_) ->
     not_loaded(?LINE).
 
-%% XXX: not sure about this one either
--spec binary_to_element(binary(), binary()) -> element().
+-spec binary_to_element(element(), binary()) -> element().
 binary_to_element(_, _) ->
     not_loaded(?LINE).
 
