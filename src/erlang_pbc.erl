@@ -67,7 +67,7 @@ init() ->
              end,
     erlang:load_nif(SoName, 0).
 
--spec group_new(atom()) -> group().
+-spec group_new('SS512' | 'MNT224' | 'MNT159' | binary()) -> group().
 group_new('SS512') ->
     group_new_nif(?SS512);
 group_new('MNT224') ->
@@ -128,30 +128,6 @@ element_from_hash(E, Bin) when is_binary(Bin) ->
             erlang:error(not_implemented_yet)
     end.
 
--spec pack_int(integer()) -> <<_:8,_:_*8>>.
-pack_int(X) ->
-    Int = pack_int(abs(X), []),
-    %% first byte is a sign byte
-    Sign = case X < 0 of
-               true ->
-                   16#ff;
-               false ->
-                   0
-           end,
-    <<Sign:8/integer-unsigned, Int/binary>>.
-
--spec pack_int(non_neg_integer(), [<<_:32>>]) -> binary().
-pack_int(X, Acc) when X < 4294967296 ->
-    list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);
-pack_int(X, Acc) ->
-    Y = X bsr 32,
-    Z = X band 16#ffffffff,
-    pack_int(Y, [<<Z:32/integer-unsigned-big>>|Acc]).
-
-% This is just a simple place holder. It mostly shouldn't ever be called
-% unless there was an unexpected error loading the NIF shared library.
-
-
 %% functions exported directly as NIFs
 -spec group_order(element() | group()) -> integer().
 group_order(_) ->
@@ -194,6 +170,26 @@ element_pp_init(_) ->
     not_loaded(?LINE).
 
 %% not exported functions
+-spec pack_int(integer()) -> <<_:8,_:_*8>>.
+pack_int(X) ->
+    Int = pack_int(abs(X), []),
+    %% first byte is a sign byte
+    Sign = case X < 0 of
+               true ->
+                   16#ff;
+               false ->
+                   0
+           end,
+    <<Sign:8/integer-unsigned, Int/binary>>.
+
+-spec pack_int(non_neg_integer(), [<<_:32>>]) -> binary().
+pack_int(X, Acc) when X < 4294967296 ->
+    list_to_binary([<<X:32/integer-unsigned-big>>|Acc]);
+pack_int(X, Acc) ->
+    Y = X bsr 32,
+    Z = X band 16#ffffffff,
+    pack_int(Y, [<<Z:32/integer-unsigned-big>>|Acc]).
+
 group_new_nif(_) ->
     not_loaded(?LINE).
 
@@ -224,5 +220,7 @@ element_set_mpz_nif(_, _) ->
 element_from_hash_nif(_, _) ->
     not_loaded(?LINE).
 
+% This is just a simple place holder. It mostly shouldn't ever be called
+% unless there was an unexpected error loading the NIF shared library.
 not_loaded(Line) ->
     erlang:nif_error({not_loaded, [{module, ?MODULE}, {line, Line}]}).
