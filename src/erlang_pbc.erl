@@ -133,7 +133,7 @@ element_from_hash(E, Bin) when is_binary(Bin) ->
 group_order(_) ->
     not_loaded(?LINE).
 
--spec element_new('G1' | 'G2' | 'ZR' | 'GT', element() | group()) -> element().
+-spec element_new('G1' | 'G2' | 'Zr' | 'GT', element() | group()) -> element().
 element_new(_, _) ->
     not_loaded(?LINE).
 
