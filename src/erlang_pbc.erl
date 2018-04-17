@@ -83,7 +83,7 @@ element_set(E, X) when is_integer(X) ->
 
 -spec element_pow(element(), element() | integer()) -> element().
 element_pow(E, X) when is_integer(X) ->
-    element_pow_mpz(E, element_set(E, X));
+    element_pow_mpz(E, pack_int(X));
 element_pow(E, X) ->
     element_pow_zn(E, X).
 
@@ -95,7 +95,7 @@ element_add(E, X) ->
 
 -spec element_mul(element(), element() | integer()) -> element().
 element_mul(E, X) when is_integer(X) ->
-    element_mul_mpz_nif(E, element_set(E, X));
+    element_mul_mpz_nif(E, pack_int(X));
 element_mul(E, X) ->
     element_mul_nif(E, X).
 
