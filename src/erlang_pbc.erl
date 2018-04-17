@@ -165,7 +165,7 @@ element_pairing(_, _) ->
 pairing_is_symmetric(_) ->
     not_loaded(?LINE).
 
--spec element_pp_init(element()) -> no_return().
+-spec element_pp_init(element()) -> ok.
 element_pp_init(_) ->
     not_loaded(?LINE).
 
