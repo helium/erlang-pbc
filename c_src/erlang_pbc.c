@@ -28,9 +28,12 @@ struct pbc_group {
     bool initialized;
 };
 
+enum field {G1, G2, GT, Zr};
+
 struct pbc_element {
     element_t element;
     element_pp_t pp;
+    enum field field;
     bool initialized;
     bool pp_initialized;
     struct pbc_group *group;
@@ -128,12 +131,16 @@ pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 
     if (strncmp("G1", groupname, 2) == 0) {
         element_init_G1(element->element, group->pairing);
+        element->field = G1;
     } else if (strncmp("G2", groupname, 2) == 0) {
         element_init_G2(element->element, group->pairing);
+        element->field = G2;
     } else if (strncmp("GT", groupname, 2) == 0) {
         element_init_GT(element->element, group->pairing);
+        element->field = GT;
     } else if (strncmp("Zr", groupname, 2) == 0) {
         element_init_Zr(element->element, group->pairing);
+        element->field = Zr;
     }
 
     element->initialized = true;
@@ -173,6 +180,7 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_add(element_new->element, element_a->element, element_b->element);
+    element_new->field = element_a->field;
 
 #ifdef PBC_DEBUG
     element_printf("= %B\n", element_new->element);
@@ -219,6 +227,7 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_sub(element_new->element, element_a->element, element_b->element);
+    element_new->field = element_a->field;
 
 #ifdef PBC_DEBUG
     element_printf("= %B\n", element_new->element);
@@ -265,10 +274,12 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
             element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
             element_init_same_as(element_new->element, element_b->element);
             element_mul_zn(element_new->element, element_b->element, element_a->element);
+            element_new->field = element_b->field;
         } else if (element_a->element->field != element_a->group->pairing->Zr && element_b->element->field == element_b->group->pairing->Zr) {
             element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
             element_init_same_as(element_new->element, element_a->element);
             element_mul_zn(element_new->element, element_a->element, element_b->element);
+            element_new->field = element_a->field;
         } else {
             // error
 #ifdef PBC_DEBUG
@@ -280,6 +291,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
         element_init_same_as(element_new->element, element_a->element);
         element_mul(element_new->element, element_a->element, element_b->element);
+        element_new->field = element_a->field;
     }
 #ifdef PBC_DEBUG
     element_printf("= %B\n", element_new->element);
@@ -330,7 +342,8 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_set_mpz(element_new->element, n);
-    /*mpz_clear(n);*/
+    element_new->field = element_a->field;
+    mpz_clear(n);
 
 #ifdef PBC_DEBUG
     element_printf("set %B to %B\n", element_a->element, element_new->element);
@@ -380,6 +393,7 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_mul_mpz(element_new->element, element_a->element, n);
+    element_new->field = element_a->field;
     mpz_clear(n);
 
 #ifdef PBC_DEBUG
@@ -426,6 +440,7 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element_a->element);
     element_div(element_new->element, element_a->element, element_b->element);
+    element_new->field = element_a->field;
 #ifdef PBC_DEBUG
     element_printf("= %B\n", element_new->element);
 #endif
@@ -479,6 +494,7 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     } else {
         element_pow_mpz(element_new->element, element_a->element, n);
     }
+    element_new->field = element_a->field;
     mpz_clear(n);
 #ifdef PBC_DEBUG
     element_printf(" = %B\n", element_new->element);
@@ -525,6 +541,7 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     } else {
         element_pow_zn(element_new->element, element_a->element, element_b->element);
     }
+    element_new->field = element_a->field;
 #ifdef PBC_DEBUG
     element_printf("= %B\n", element_new->element);
 #endif
@@ -557,6 +574,7 @@ pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element->element);
     element_random(element_new->element);
+    element_new->field = element->field;
 
     // increment the reference count on the group
     enif_keep_resource(element->group);
@@ -634,6 +652,7 @@ pbc_element_from_hash(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     element_init_same_as(element_new->element, element->element);
     element_from_hash(element_new->element, bin.data, bin.size);
+    element_new->field = element->field;
 
     // increment the reference count on the group
     enif_keep_resource(element->group);
@@ -663,11 +682,12 @@ pbc_element_to_binary(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     int bytes = element_length_in_bytes(element->element);
 
     ErlNifBinary bin;
-    if (!enif_alloc_binary(bytes, &bin)) {
+    if (!enif_alloc_binary(bytes+1, &bin)) {
         return enif_make_badarg(env);
     }
 
-    element_to_bytes(bin.data, element->element);
+    bin.data[0] = (uint8_t) element->field;
+    element_to_bytes(bin.data+1, element->element);
     return enif_make_binary(env, &bin);
 }
 
@@ -689,8 +709,22 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
-    element_init_same_as(element_new->element, element->element);
-    element_from_bytes(element_new->element, bin.data);
+    switch ((enum field) bin.data[0]) {
+        case G1:
+            element_init_G1(element_new->element, element->group->pairing);
+            break;
+        case G2:
+            element_init_G2(element_new->element, element->group->pairing);
+            break;
+        case GT:
+            element_init_GT(element_new->element, element->group->pairing);
+            break;
+        case Zr:
+            element_init_Zr(element_new->element, element->group->pairing);
+            break;
+    }
+    element_from_bytes(element_new->element, bin.data+1);
+    element_new->field = (uint8_t) bin.data[0];
 
     // increment the reference count on the group
     enif_keep_resource(element->group);
