@@ -560,6 +560,36 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+pbc_element_neg(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
+    element_init_same_as(element_new->element, element->element);
+    element_neg(element_new->element, element->element);
+    element_new->field = element->field;
+
+    // increment the reference count on the group
+    enif_keep_resource(element->group);
+
+    element_new->initialized = true;
+    element_new->pp_initialized = false;
+    element_new->group = element->group;
+
+    ERL_NIF_TERM term = enif_make_resource(env, element_new);
+    // always release the resource, BEAM will GC it when nobody is using it anymore
+    enif_release_resource(element_new);
+    return term;
+}
+
+static ERL_NIF_TERM
 pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 {
     if (argc != 1) {
@@ -763,6 +793,46 @@ pbc_element_cmp(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 }
 
+
+static ERL_NIF_TERM
+pbc_element_is0(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    if (element_is0(element->element) == 0) {
+        return mk_atom(env, "false");
+    } else {
+        return mk_atom(env, "true");
+    }
+}
+
+
+static ERL_NIF_TERM
+pbc_element_is1(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    if (element_is1(element->element) == 0) {
+        return mk_atom(env, "false");
+    } else {
+        return mk_atom(env, "true");
+    }
+}
+
 static ERL_NIF_TERM
 pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 {
@@ -890,6 +960,7 @@ static ErlNifFunc nif_funcs[] = {
     {"element_div_nif", 2, pbc_element_div, 0},
     {"element_pow_mpz", 2, pbc_element_pow_mpz, 0},
     {"element_pow_zn", 2, pbc_element_pow_zn, 0},
+    {"element_neg", 1, pbc_element_neg, 0},
     {"element_new", 2, pbc_element_new, 0},
     {"element_from_hash_nif", 2, pbc_element_from_hash, 0},
     {"element_random", 1, pbc_element_random, 0},
@@ -900,6 +971,8 @@ static ErlNifFunc nif_funcs[] = {
     {"element_pairing", 2, pbc_element_pairing, 0},
     {"pairing_is_symmetric", 1, pbc_pairing_is_symmetric, 0},
     {"element_pp_init", 1, pbc_element_pp_init, 0},
+    {"element_is0", 1, pbc_element_is0, 0},
+    {"element_is1", 1, pbc_element_is1, 0}
     };
 
 static int

@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1]).
+-export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_neg/1, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1, element_is0/1, element_is1/1]).
 -on_load(init/0).
 
 -type element() :: reference().
@@ -87,6 +87,10 @@ element_pow(E, X) when is_integer(X) ->
 element_pow(E, X) ->
     element_pow_zn(E, X).
 
+-spec element_neg(element()) -> element().
+element_neg(_) ->
+    not_loaded(?LINE).
+
 -spec element_add(element(), element() | integer()) -> element().
 element_add(E, X) when is_integer(X) ->
     element_add_nif(E, element_set(E, X));
@@ -167,6 +171,14 @@ pairing_is_symmetric(_) ->
 
 -spec element_pp_init(element()) -> ok.
 element_pp_init(_) ->
+    not_loaded(?LINE).
+
+-spec element_is0(element()) -> boolean().
+element_is0(_) ->
+    not_loaded(?LINE).
+
+-spec element_is1(element()) -> boolean().
+element_is1(_) ->
     not_loaded(?LINE).
 
 %% not exported functions
