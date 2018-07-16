@@ -32,10 +32,12 @@ enum field {G1, G2, GT, Zr};
 
 struct pbc_element {
     element_t element;
+    pairing_pp_t p;
     element_pp_t pp;
     enum field field;
     bool initialized;
     bool pp_initialized;
+    bool p_initialized;
     struct pbc_group *group;
 };
 
@@ -144,6 +146,7 @@ pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     element->initialized = true;
+    element->p_initialized = false;
     element->pp_initialized = false;
     element->group = group;
 
@@ -190,6 +193,7 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -237,6 +241,7 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -301,6 +306,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -353,6 +359,7 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -404,6 +411,7 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -449,6 +457,7 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -504,6 +513,7 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -550,6 +560,7 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -580,6 +591,7 @@ pbc_element_neg(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element->group;
 
@@ -610,6 +622,7 @@ pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element->group;
 
@@ -688,6 +701,7 @@ pbc_element_from_hash(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element->group;
 
@@ -763,6 +777,7 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = group;
 
@@ -859,17 +874,31 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         // symmetric pairings need both operands in the same field
         element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
         element_init_GT(element_new->element, element_a->group->pairing);
-        element_pairing(element_new->element, element_a->element, element_b->element);
+        if (element_a->p_initialized) {
+            pairing_pp_apply(element_new->element, element_b->element, element_a->p);
+        } else if (element_b->p_initialized) {
+            pairing_pp_apply(element_new->element, element_a->element, element_b->p);
+        } else {
+            element_pairing(element_new->element, element_a->element, element_b->element);
+        }
     } else if ((!pairing_is_symmetric(element_a->group->pairing)) && element_a->element->field != element_b->element->field) {
         // assymetric pairings need one element from G1 and one from G2
         if (element_a->element->field == element_a->group->pairing->G1 && element_b->element->field == element_b->group->pairing->G2) {
             element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
             element_init_GT(element_new->element, element_a->group->pairing);
-            element_pairing(element_new->element, element_a->element, element_b->element);
+            if (element_a->p_initialized) {
+                pairing_pp_apply(element_new->element, element_b->element, element_a->p);
+            } else {
+                element_pairing(element_new->element, element_a->element, element_b->element);
+            }
         } else if (element_a->element->field == element_a->group->pairing->G2 && element_b->element->field == element_b->group->pairing->G1) {
             element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
             element_init_GT(element_new->element, element_a->group->pairing);
-            element_pairing(element_new->element, element_b->element, element_a->element);
+            if (element_b->p_initialized) {
+                pairing_pp_apply(element_new->element, element_a->element, element_b->p);
+            } else {
+                element_pairing(element_new->element, element_b->element, element_a->element);
+            }
         } else {
             return enif_raise_exception(env, atom_group_mismatch);
         }
@@ -881,6 +910,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     enif_keep_resource(element_a->group);
 
     element_new->initialized = true;
+    element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = element_a->group;
 
@@ -934,6 +964,28 @@ pbc_element_pp_init(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     return mk_atom(env, "ok");
 }
 
+static ERL_NIF_TERM
+pbc_pairing_pp_init(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        return enif_make_badarg(env);
+    }
+
+    if (element->p_initialized) {
+        return mk_atom(env, "ok");
+    }
+
+    pairing_pp_init(element->p, element->element, element->group->pairing);
+    element->p_initialized = true;
+
+    return mk_atom(env, "ok");
+}
+
 void group_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_group *group = (struct pbc_group *) res;
@@ -946,6 +998,9 @@ void element_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_element *element = (struct pbc_element *) res;
     if (element->initialized) {
+        if (element->p_initialized) {
+            pairing_pp_clear(element->p);
+        }
         if (element->pp_initialized) {
             element_pp_clear(element->pp);
         }
@@ -977,6 +1032,7 @@ static ErlNifFunc nif_funcs[] = {
     {"element_pairing", 2, pbc_element_pairing, 0},
     {"pairing_is_symmetric", 1, pbc_pairing_is_symmetric, 0},
     {"element_pp_init", 1, pbc_element_pp_init, 0},
+    {"pairing_pp_init", 1, pbc_pairing_pp_init, 0},
     {"element_is0", 1, pbc_element_is0, 0},
     {"element_is1", 1, pbc_element_is1, 0}
     };
