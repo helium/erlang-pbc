@@ -972,7 +972,7 @@ pbc_pairing_pp_init(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     struct pbc_element *element;
-    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element) || element->field != G1) {
         return enif_make_badarg(env);
     }
 
