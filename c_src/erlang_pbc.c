@@ -729,7 +729,10 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     }
 
     struct pbc_element *element;
-    if (!enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+    struct pbc_group *group;
+    if (enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        group = element->group;
+    } else if (!enif_get_resource(env, argv[0], PBC_GROUP_RESOURCE, (void**)&group)) {
         return enif_make_badarg(env);
     }
 
@@ -741,27 +744,27 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     struct pbc_element* element_new = enif_alloc_resource(PBC_ELEMENT_RESOURCE, sizeof(struct pbc_element));
     switch ((enum field) bin.data[0]) {
         case G1:
-            element_init_G1(element_new->element, element->group->pairing);
+            element_init_G1(element_new->element, group->pairing);
             break;
         case G2:
-            element_init_G2(element_new->element, element->group->pairing);
+            element_init_G2(element_new->element, group->pairing);
             break;
         case GT:
-            element_init_GT(element_new->element, element->group->pairing);
+            element_init_GT(element_new->element, group->pairing);
             break;
         case Zr:
-            element_init_Zr(element_new->element, element->group->pairing);
+            element_init_Zr(element_new->element, group->pairing);
             break;
     }
     element_from_bytes(element_new->element, bin.data+1);
     element_new->field = (uint8_t) bin.data[0];
 
     // increment the reference count on the group
-    enif_keep_resource(element->group);
+    enif_keep_resource(group);
 
     element_new->initialized = true;
     element_new->pp_initialized = false;
-    element_new->group = element->group;
+    element_new->group = group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
     // always release the resource, BEAM will GC it when nobody is using it anymore
