@@ -907,7 +907,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         } else if (element_b->p_initialized) {
             pairing_pp_apply(element_new->element, element_a->element, element_b->p);
         } else {
-            if (missed_pp_counts) {
+            if (missed_pp_counts && element_a->field == G1) {
                 element_a->missed_pp++;
                 element_b->missed_pp++;
                 if (element_a->missed_pp > missed_pp_threshold) {
@@ -926,7 +926,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
             if (element_a->p_initialized) {
                 pairing_pp_apply(element_new->element, element_b->element, element_a->p);
             } else {
-                if (missed_pp_counts) {
+                if (missed_pp_counts && element_a->field == G1) {
                     element_a->missed_pp++;
                     if (element_a->missed_pp > missed_pp_threshold) {
                         enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[0]));
@@ -940,7 +940,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
             if (element_b->p_initialized) {
                 pairing_pp_apply(element_new->element, element_a->element, element_b->p);
             } else {
-                if (missed_pp_counts) {
+                if (missed_pp_counts && element_b->field == G1) {
                     element_b->missed_pp++;
                     if (element_b->missed_pp > missed_pp_threshold) {
                         enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[1]));
