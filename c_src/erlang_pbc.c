@@ -19,6 +19,8 @@ static ErlNifResourceType *PBC_ELEMENT_RESOURCE;
 static ERL_NIF_TERM atom_undefined;
 static ERL_NIF_TERM atom_group_mismatch;
 static ERL_NIF_TERM atom_enotsup;
+static bool missed_pp_counts;
+static unsigned int missed_pp_threshold;
 
 void group_destructor(ErlNifEnv *env, void *res);
 void element_destructor(ErlNifEnv *env, void *res);
@@ -38,6 +40,7 @@ struct pbc_element {
     bool initialized;
     bool pp_initialized;
     bool p_initialized;
+    unsigned int missed_pp;
     struct pbc_group *group;
 };
 
@@ -148,6 +151,7 @@ pbc_element_new(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element->initialized = true;
     element->p_initialized = false;
     element->pp_initialized = false;
+    element->missed_pp = 0;
     element->group = group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element);
@@ -195,6 +199,7 @@ pbc_element_add(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -243,6 +248,7 @@ pbc_element_sub(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -308,6 +314,7 @@ pbc_element_mul(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -361,6 +368,7 @@ pbc_element_set_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -413,6 +421,7 @@ pbc_element_mul_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -459,6 +468,7 @@ pbc_element_div(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -501,6 +511,12 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (element_a->pp_initialized) {
         element_pp_pow(element_new->element, n, element_a->pp);
     } else {
+        if (missed_pp_counts) {
+            element_a->missed_pp++;
+            if (element_a->missed_pp > missed_pp_threshold) {
+                enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[0]));
+            }
+        }
         element_pow_mpz(element_new->element, element_a->element, n);
     }
     element_new->field = element_a->field;
@@ -515,6 +531,7 @@ pbc_element_pow_mpz(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -549,6 +566,12 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     if (element_a->pp_initialized) {
         element_pp_pow_zn(element_new->element, element_b->element, element_a->pp);
     } else {
+        if (missed_pp_counts) {
+            element_a->missed_pp++;
+            if (element_a->missed_pp > missed_pp_threshold) {
+                enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[0]));
+            }
+        }
         element_pow_zn(element_new->element, element_a->element, element_b->element);
     }
     element_new->field = element_a->field;
@@ -562,6 +585,7 @@ pbc_element_pow_zn(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -593,6 +617,7 @@ pbc_element_neg(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -624,6 +649,7 @@ pbc_element_random(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -703,6 +729,7 @@ pbc_element_from_hash(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -780,6 +807,7 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
     element_new->group = group;
+    element_new->missed_pp = 0;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
     // always release the resource, BEAM will GC it when nobody is using it anymore
@@ -879,6 +907,15 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         } else if (element_b->p_initialized) {
             pairing_pp_apply(element_new->element, element_a->element, element_b->p);
         } else {
+            if (missed_pp_counts) {
+                element_a->missed_pp++;
+                element_b->missed_pp++;
+                if (element_a->missed_pp > missed_pp_threshold) {
+                    enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[0]));
+                } else if (element_b->missed_pp > missed_pp_threshold) {
+                    enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[1]));
+                }
+            }
             element_pairing(element_new->element, element_a->element, element_b->element);
         }
     } else if ((!pairing_is_symmetric(element_a->group->pairing)) && element_a->element->field != element_b->element->field) {
@@ -889,6 +926,12 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
             if (element_a->p_initialized) {
                 pairing_pp_apply(element_new->element, element_b->element, element_a->p);
             } else {
+                if (missed_pp_counts) {
+                    element_a->missed_pp++;
+                    if (element_a->missed_pp > missed_pp_threshold) {
+                        enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[0]));
+                    }
+                }
                 element_pairing(element_new->element, element_a->element, element_b->element);
             }
         } else if (element_a->element->field == element_a->group->pairing->G2 && element_b->element->field == element_b->group->pairing->G1) {
@@ -897,6 +940,12 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
             if (element_b->p_initialized) {
                 pairing_pp_apply(element_new->element, element_a->element, element_b->p);
             } else {
+                if (missed_pp_counts) {
+                    element_b->missed_pp++;
+                    if (element_b->missed_pp > missed_pp_threshold) {
+                        enif_raise_exception(env, enif_make_tuple2(env, mk_atom(env, "pp_threshold"), argv[1]));
+                    }
+                }
                 element_pairing(element_new->element, element_b->element, element_a->element);
             }
         } else {
@@ -912,6 +961,7 @@ pbc_element_pairing(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     element_new->initialized = true;
     element_new->p_initialized = false;
     element_new->pp_initialized = false;
+    element_new->missed_pp = 0;
     element_new->group = element_a->group;
 
     ERL_NIF_TERM term = enif_make_resource(env, element_new);
@@ -986,6 +1036,38 @@ pbc_pairing_pp_init(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
     return mk_atom(env, "ok");
 }
 
+static ERL_NIF_TERM
+enable_pp_counts(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    // first argument should be a boolean
+    char atombuf[10];
+    if (!enif_is_atom(env, argv[0]) || enif_get_atom(env, argv[0], atombuf, 10, ERL_NIF_LATIN1) == 0) {
+        return enif_make_badarg(env);
+    }
+
+    // second argument should be the threshold
+    int threshold;
+    if (!enif_get_int(env, argv[1], &threshold) || threshold < 0) {
+        return enif_make_badarg(env);
+    }
+
+    if (strncmp("true", atombuf, 5) == 0) {
+        missed_pp_counts = true;
+    } else if (strncmp("false", atombuf, 6) == 0) {
+        missed_pp_counts = false;
+    } else {
+        return enif_make_badarg(env);
+    }
+
+    missed_pp_threshold = threshold;
+
+    return mk_atom(env, "ok");
+}
+
 void group_destructor(ErlNifEnv *env, void *res) {
     (void)env;
     struct pbc_group *group = (struct pbc_group *) res;
@@ -1034,7 +1116,8 @@ static ErlNifFunc nif_funcs[] = {
     {"element_pp_init", 1, pbc_element_pp_init, 0},
     {"pairing_pp_init", 1, pbc_pairing_pp_init, 0},
     {"element_is0", 1, pbc_element_is0, 0},
-    {"element_is1", 1, pbc_element_is1, 0}
+    {"element_is1", 1, pbc_element_is1, 0},
+    {"enable_pp_counts", 2, enable_pp_counts, 0}
     };
 
 static int
@@ -1042,6 +1125,8 @@ load(ErlNifEnv * env, void ** priv_data, ERL_NIF_TERM load_info)
 {
     (void)priv_data;
     (void)load_info;
+    missed_pp_counts = false;
+    missed_pp_threshold = 0;
     atom_undefined = enif_make_atom(env, "undefined");
     atom_group_mismatch    = enif_make_atom(env, "group_mismatch");
     atom_enotsup    = enif_make_atom(env, "enotsup");
