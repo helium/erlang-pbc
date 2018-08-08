@@ -16,6 +16,7 @@ fi
 
 if [ ! -f Makefile ]; then
     ./configure --prefix=$PWD/build
+    sed -i '/^CFLAGS/ s/$/ -fPIC/' Makefile
 fi
 
 make -j
