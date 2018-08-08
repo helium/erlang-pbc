@@ -15,6 +15,7 @@ C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT).so
 
 # System type and C compiler/flags.
+LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei -lgmp
 
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
@@ -24,22 +25,24 @@ ifeq ($(UNAME_SYS), Darwin)
 	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions -Wall
 	LDFLAGS ?= -arch x86_64
 	LDFLAGS += -bundle -bundle_loader $(ERL_BEAM_SMP) -L/usr/local/opt/openssl/lib
+	LDLIBS += pbc/build/lib/libpbc.a
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CC ?= cc
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 	LDFLAGS += -shared
+	LDLIBS += -Lpbc/build/lib -Wl,-Bstatic -lpbc -Wl,-Bdynamic
 else ifeq ($(UNAME_SYS), Linux)
 	CC ?= gcc
 	CFLAGS ?= -O0 -g3 -ggdb -std=c99 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O0 -g3 -ggdb -finline-functions -Wall
 	LDFLAGS += -shared
+	LDLIBS += -Lpbc/build/lib -Wl,-Bstatic -lpbc -Wl,-Bdynamic
 endif
 
-CFLAGS += -fPIC -I$(ERTS_INCLUDE_DIR) -I$(ERL_INTERFACE_INCLUDE_DIR) -Wextra
+CFLAGS += -fPIC -I$(ERTS_INCLUDE_DIR) -I$(ERL_INTERFACE_INCLUDE_DIR) -Wextra -Ipbc/build/include
 CXXFLAGS += -fPIC -I$(ERTS_INCLUDE_DIR) -I$(ERL_INTERFACE_INCLUDE_DIR)  -Wextra
 
-LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei -lpbc -lgmp
 
 # Verbosity.
 
@@ -52,7 +55,7 @@ cpp_verbose = $(cpp_verbose_$(V))
 link_verbose_0 = @echo " LD    " $(@F);
 link_verbose = $(link_verbose_$(V))
 
-SOURCES := $(shell find $(C_SRC_DIR) -type f \( -name "*.c" -o -name "*.C" -o -name "*.cc" -o -name "*.cpp" \))
+SOURCES := erlang_pbc.c
 OBJECTS = $(addsuffix .o, $(basename $(SOURCES)))
 
 COMPILE_C = $(c_verbose) $(CC) $(CFLAGS) $(CPPFLAGS) -c
