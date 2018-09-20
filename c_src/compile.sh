@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ ! -d c_src/h3 ]; then
+if [ ! -d c_src/pbc ]; then
     git clone https://github.com/blynn/pbc c_src/pbc
 fi
 
