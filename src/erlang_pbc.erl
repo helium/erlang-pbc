@@ -1,5 +1,5 @@
 -module(erlang_pbc).
--export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_neg/1, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1, pairing_pp_init/1, element_is0/1, element_is1/1, enable_pp_counts/2]).
+-export([group_new/1, group_order/1, element_new/2, element_to_string/1, element_random/1, element_add/2, element_sub/2, element_mul/2, element_div/2, element_pow/2, element_neg/1, element_set/2, element_from_hash/2, element_to_binary/1, binary_to_element/2, elements_to_binary/1, binary_to_elements/2, element_cmp/2, element_pairing/2, pairing_is_symmetric/1, element_pp_init/1, pairing_pp_init/1, element_is0/1, element_is1/1, enable_pp_counts/2]).
 -on_load(init/0).
 
 -type element() :: reference().
@@ -155,6 +155,14 @@ element_to_binary(_) ->
 
 -spec binary_to_element(element(), binary()) -> element().
 binary_to_element(_, _) ->
+    not_loaded(?LINE).
+
+-spec elements_to_binary([element()]) -> binary().
+elements_to_binary(_) ->
+    not_loaded(?LINE).
+
+-spec binary_to_elements(element(), binary()) -> [element()].
+binary_to_elements(_, _) ->
     not_loaded(?LINE).
 
 -spec element_cmp(element(), element()) -> boolean().
