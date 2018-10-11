@@ -816,6 +816,108 @@ pbc_binary_to_element(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static ERL_NIF_TERM
+pbc_elements_to_binary(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    if (!enif_is_list(env, argv[0])) {
+        return enif_make_badarg(env);
+    }
+    unsigned int in_len = 0;
+
+    if (!enif_get_list_length(env, argv[0], &in_len)) {
+        return enif_make_badarg(env);
+    }
+
+    ERL_NIF_TERM in_list = argv[0];
+    ERL_NIF_TERM out_list = enif_make_list(env, 0);
+    ERL_NIF_TERM cur;
+    struct pbc_element *element;
+
+    while(enif_get_list_cell(env, in_list, &cur, &in_list)) {
+        if (!enif_get_resource(env, cur, PBC_ELEMENT_RESOURCE, (void**)&element)) {
+            return enif_make_badarg(env);
+        }
+
+        int bytes = element_length_in_bytes(element->element);
+
+        ErlNifBinary bin;
+        if (!enif_alloc_binary(bytes+1, &bin)) {
+            return enif_make_badarg(env);
+        }
+
+        bin.data[0] = (uint8_t) element->field;
+        element_to_bytes(bin.data+1, element->element);
+        out_list = enif_make_list_cell(env, enif_make_binary(env, &bin), out_list);
+    }
+
+    ErlNifBinary result;
+
+    enif_term_to_binary(env, out_list, &result);
+
+    return enif_make_binary(env, &result);
+}
+
+static ERL_NIF_TERM
+pbc_binary_to_elements(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
+{
+
+    if (argc != 2) {
+        return enif_make_badarg(env);
+    }
+
+    if (!enif_is_binary(env, argv[1])) {
+        return enif_make_badarg(env);
+    }
+
+    struct pbc_element *element;
+    struct pbc_group *group;
+    if (enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
+        group = element->group;
+    } else if (!enif_get_resource(env, argv[0], PBC_GROUP_RESOURCE, (void**)&group)) {
+        return enif_make_badarg(env);
+    }
+
+    ErlNifBinary bin;
+    if (!enif_inspect_binary(env, argv[1], &bin)) {
+        return enif_make_badarg(env);
+    }
+
+    ERL_NIF_TERM in_list = argv[0];
+    ERL_NIF_TERM out_list = enif_make_list(env, 0);
+    ERL_NIF_TERM cur;
+
+    if (!enif_binary_to_term(env, bin.data, bin.size, &in_list, ERL_NIF_BIN2TERM_SAFE)) {
+        return enif_make_badarg(env);
+    }
+
+    unsigned int in_len = 0;
+
+    if (!enif_get_list_length(env, in_list, &in_len)) {
+        return enif_make_badarg(env);
+    }
+
+    ERL_NIF_TERM args[2];
+    args[0] = argv[0];
+
+    while(enif_get_list_cell(env, in_list, &cur, &in_list)) {
+        if (!enif_inspect_binary(env, cur, &bin)) {
+            return enif_make_badarg(env);
+        }
+
+        args[1] = cur;
+
+        cur = pbc_binary_to_element(env, argc, args);
+
+        out_list = enif_make_list_cell(env, cur, out_list);
+    }
+
+    return out_list;
+}
+
+static ERL_NIF_TERM
 pbc_element_cmp(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
 {
     if (argc != 2) {
@@ -1110,6 +1212,8 @@ static ErlNifFunc nif_funcs[] = {
     {"element_to_string", 1, pbc_element_to_string, 0},
     {"element_to_binary", 1, pbc_element_to_binary, 0},
     {"binary_to_element", 2, pbc_binary_to_element, 0},
+    {"elements_to_binary", 1, pbc_elements_to_binary, 0},
+    {"binary_to_elements", 2, pbc_binary_to_elements, 0},
     {"element_cmp", 2, pbc_element_cmp, 0},
     {"element_pairing", 2, pbc_element_pairing, 0},
     {"pairing_is_symmetric", 1, pbc_pairing_is_symmetric, 0},
