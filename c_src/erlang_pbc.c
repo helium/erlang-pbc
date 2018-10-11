@@ -868,6 +868,10 @@ pbc_binary_to_elements(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
+    if (!enif_is_binary(env, argv[1])) {
+        return enif_make_badarg(env);
+    }
+
     struct pbc_element *element;
     struct pbc_group *group;
     if (enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
