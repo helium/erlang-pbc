@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ ! -d c_src/pbc ]; then
-    git clone https://github.com/blynn/pbc c_src/pbc
+    git clone https://github.com/Vagabond/pbc c_src/pbc
 fi
 
 cd c_src/pbc
