@@ -15,7 +15,7 @@ if [ ! -f configure ]; then
 fi
 
 if [ ! -f Makefile ]; then
-    ./configure --prefix=$PWD/build
+    ./configure --prefix=$PWD/build $CONFIGURE_ARGS
     sed -i '/^CFLAGS/ s/$/ -fPIC/' Makefile
 fi
 
