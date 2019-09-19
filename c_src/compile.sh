@@ -15,7 +15,7 @@ if [ ! -f configure ]; then
 fi
 
 if [ ! -f Makefile ]; then
-    ./configure --prefix=$PWD/build $CONFIGURE_ARGS
+    ./configure --prefix=$PWD/build --enable-optimized --enable-safe-clean $CONFIGURE_ARGS
     sed -i '/^CFLAGS/ s/$/ -fPIC/' Makefile
 fi
 
