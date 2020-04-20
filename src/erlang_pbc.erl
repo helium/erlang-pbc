@@ -174,8 +174,15 @@ element_cmp(_, _) ->
 
 -spec element_pairing(element(), element()) -> element().
 element_pairing(A, B) ->
-    Bin = elements_to_binary([A, B]),
-    error_logger:info_msg("elements pairing ~p ~p", [erlang:phash2(Bin), erlang:phash2({A, B})]),
+    Bin = erlang:phash2(elements_to_binary([A, B])),
+    [{backtrace, Backtrace}] = erlang:process_info(self(), [backtrace]),
+    case get(Bin) of 
+        undefined ->
+            put(Bin, [Backtrace]);
+        Backtraces ->
+            error_logger:info_msg("elements pairing ~p ~p", [erlang:phash2(Bin), [Backtrace|Backtraces]]),
+            put(Bin, [Backtrace|Backtraces])
+    end,
     element_pairing_nif(A, B).
 
 element_pairing_nif(_, _) ->
