@@ -180,7 +180,7 @@ element_pairing(A, B) ->
         undefined ->
             put(Bin, [Backtrace]);
         Backtraces ->
-            error_logger:info_msg("elements pairing ~p ~p", [erlang:phash2(Bin), [Backtrace|Backtraces]]),
+            [error_logger:info_msg("elements pairing ~p ~p", [erlang:phash2(Bin), Bt]) || Bt <- [Backtrace|Backtraces]],
             put(Bin, [Backtrace|Backtraces])
     end,
     element_pairing_nif(A, B).
