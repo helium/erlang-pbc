@@ -116,17 +116,20 @@ element_div(E, X) ->
     element_div_nif(E, X).
 
 -spec element_from_hash(element(), {digest, binary()} | binary()) -> element().
-element_from_hash(E, {digest, Bin}) when is_binary(Bin) ->
+element_from_hash(E, {digest, Hash}) when is_binary(Hash) ->
     %% already a hash, trust the user knows what they're doing
-    element_from_hash_nif(E, Bin);
+    error_logger:info("element_from_hash ~p ~p ~p", [erlang:phash2(element_to_binary(E)), erlang:phash2(E), Hash]),
+    element_from_hash_nif(E, Hash);
 element_from_hash(E, Bin) when is_binary(Bin) ->
     %% ok, we need to hash it in some magic way
     %% TODO charm uses the first 2 bytes to hold block size and hash prefix
     Order = group_order(E),
     case Order < 256 of
         true ->
+            Hash = crypto:hash(sha256, Bin),
+            error_logger:info("element_from_hash ~p ~p ~p", [erlang:phash2(element_to_binary(E)), erlang:phash2(E), Hash]),
             %% ok, we have enough bits in the hash to satisfy the group order
-            element_from_hash_nif(E, crypto:hash(sha256, Bin));
+            element_from_hash_nif(E, Hash);
         false ->
             %% TODO apply variable size hash technique
             erlang:error(not_implemented_yet)
@@ -170,7 +173,12 @@ element_cmp(_, _) ->
     not_loaded(?LINE).
 
 -spec element_pairing(element(), element()) -> element().
-element_pairing(_, _) ->
+element_pairing(A, B) ->
+    Bin = elements_to_binary([A, B]),
+    error_logger:info("elements pairing ~p ~p", [erlang:phash2(Bin), erlang:phash({A, B})]),
+    element_pairing_nif(A, B).
+
+element_pairing_nif(_, _) ->
     not_loaded(?LINE).
 
 -spec pairing_is_symmetric(element()) -> boolean().

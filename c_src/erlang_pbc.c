@@ -1215,7 +1215,7 @@ static ErlNifFunc nif_funcs[] = {
     {"elements_to_binary", 1, pbc_elements_to_binary, 0},
     {"binary_to_elements", 2, pbc_binary_to_elements, 0},
     {"element_cmp", 2, pbc_element_cmp, 0},
-    {"element_pairing", 2, pbc_element_pairing, 0},
+    {"element_pairing_nif", 2, pbc_element_pairing, 0},
     {"pairing_is_symmetric", 1, pbc_pairing_is_symmetric, 0},
     {"element_pp_init", 1, pbc_element_pp_init, 0},
     {"pairing_pp_init", 1, pbc_pairing_pp_init, 0},
