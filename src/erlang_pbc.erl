@@ -118,7 +118,15 @@ element_div(E, X) ->
 -spec element_from_hash(element(), {digest, binary()} | binary()) -> element().
 element_from_hash(E, {digest, Hash}) when is_binary(Hash) ->
     %% already a hash, trust the user knows what they're doing
-    error_logger:info_msg("element_from_hash ~p ~p ~p", [erlang:phash2(element_to_binary(E)), erlang:phash2(E), Hash]),
+    [{backtrace, Backtrace}] = erlang:process_info(self(), [backtrace]),
+    Key = erlang:phash2({element_to_binary(E), Hash}),
+    case get(Key) of 
+        undefined ->
+            put(Key, [Backtrace]);
+        Backtraces ->
+            [error_logger:info_msg("element_from_hash ~p ~p", [erlang:phash2(Key), Bt]) || Bt <- [Backtrace|Backtraces]],
+            put(Key, [Backtrace|Backtraces])
+    end,
     element_from_hash_nif(E, Hash);
 element_from_hash(E, Bin) when is_binary(Bin) ->
     %% ok, we need to hash it in some magic way
@@ -127,7 +135,15 @@ element_from_hash(E, Bin) when is_binary(Bin) ->
     case Order < 256 of
         true ->
             Hash = crypto:hash(sha256, Bin),
-            error_logger:info_msg("element_from_hash ~p ~p ~p", [erlang:phash2(element_to_binary(E)), erlang:phash2(E), Hash]),
+            [{backtrace, Backtrace}] = erlang:process_info(self(), [backtrace]),
+            Key = erlang:phash2({element_to_binary(E), Hash}),
+            case get(Key) of 
+                undefined ->
+                    put(Key, [Backtrace]);
+                Backtraces ->
+                    [error_logger:info_msg("element_from_hash ~p ~p", [erlang:phash2(Key), Bt]) || Bt <- [Backtrace|Backtraces]],
+                    put(Key, [Backtrace|Backtraces])
+            end,
             %% ok, we have enough bits in the hash to satisfy the group order
             element_from_hash_nif(E, Hash);
         false ->
