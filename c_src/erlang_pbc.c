@@ -872,14 +872,6 @@ pbc_binary_to_elements(ErlNifEnv * env, int argc, const ERL_NIF_TERM argv[])
         return enif_make_badarg(env);
     }
 
-    struct pbc_element *element;
-    struct pbc_group *group;
-    if (enif_get_resource(env, argv[0], PBC_ELEMENT_RESOURCE, (void**)&element)) {
-        group = element->group;
-    } else if (!enif_get_resource(env, argv[0], PBC_GROUP_RESOURCE, (void**)&group)) {
-        return enif_make_badarg(env);
-    }
-
     ErlNifBinary bin;
     if (!enif_inspect_binary(env, argv[1], &bin)) {
         return enif_make_badarg(env);
