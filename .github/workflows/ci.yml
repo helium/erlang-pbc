@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    container: heliumsystems/builder-erlang:1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: rebar3 compile
+
+    - name: Run Dialyzer
+      run: rebar3 dialyzer
+
+    # No tests to run, but ensures native shared object can load.
+    - name: Run EUnit tests
+      run: rebar3 eunit

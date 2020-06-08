@@ -8,7 +8,7 @@
 -export_type([element/0, group/0]).
 
 -define(APPNAME, erlang_pbc).
--define(LIBNAME, erlang_pbc).
+-define(LIBNAME, liberlang_pbc).
 
 -define(SS512,
 <<"type a
