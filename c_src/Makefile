@@ -15,7 +15,7 @@ C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT).so
 
 # System type and C compiler/flags.
-LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei -lgmp
+LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lei -lgmp
 
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
