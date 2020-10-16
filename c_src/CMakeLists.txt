@@ -91,6 +91,7 @@ endif()
 # NIF                                                                    #
 ##########################################################################
 find_package(Erlang REQUIRED)
+find_package(GMP REQUIRED)
 find_package(PBC REQUIRED)
 add_library(erlang_pbc MODULE erlang_pbc.c)
 target_link_libraries(erlang_pbc

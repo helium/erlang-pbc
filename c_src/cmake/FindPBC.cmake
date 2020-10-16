@@ -9,6 +9,7 @@ endif()
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
   GIT_REPOSITORY    https://github.com/Vagabond/pbc
+  GIT_TAG           cbe5718309e2c34345a35eb76731fb81122f0d79
   UPDATE_COMMAND    ""
   BUILD_IN_SOURCE   1
   CONFIGURE_COMMAND autoreconf --install > /dev/null 2>&1 || autoreconf &&
@@ -21,6 +22,7 @@ ExternalProject_Add(pbc
                     $ENV{CONFIGURE_ARGS}
                     CC=${CMAKE_C_COMPILER}
                     CFLAGS=${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}
+                    CPPFLAGS=-I${GMP_INCLUDE_DIR}
                     LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/lib
   BUILD_COMMAND     make -j
   BUILD_BYPRODUCTS  ${CMAKE_CURRENT_BINARY_DIR}/lib/libpbc.a
@@ -41,6 +43,6 @@ set_target_properties(PBC::PBC
   )
 target_link_libraries(PBC::PBC
   INTERFACE
-  gmp
+  GMP::gmp
   )
 add_dependencies(PBC::PBC pbc)
