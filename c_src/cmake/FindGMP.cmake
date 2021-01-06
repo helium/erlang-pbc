@@ -50,8 +50,8 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PKG QUIET gmp gmpxx)
 
 # Try to locate the libraries and their headers, using pkg-config hints
-find_path(GMP_INCLUDE_DIR gmp.h HINTS ${PKG_gmp_INCLUDEDIR})
-find_library(GMP_LIB gmp HINTS ${PKG_gmp_LIBDIR})
+find_path(GMP_INCLUDE_DIR gmp.h HINTS ${PKG_gmp_INCLUDEDIR} $ENV{CMAKE_INCLUDE_DIR})
+find_library(GMP_LIB gmp HINTS ${PKG_gmp_LIBDIR} $ENV{CMAKE_LIBRARY_PATH})
 
 # Remove these variables from cache inspector
 mark_as_advanced(GMP_INCLUDE_DIR GMP_LIB)
