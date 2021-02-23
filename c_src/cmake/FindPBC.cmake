@@ -26,7 +26,8 @@ ExternalProject_Add(pbc
                     CFLAGS=${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}
                     CPPFLAGS=-I${GMP_INCLUDE_DIR}
                     LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/lib\ -L${GMP_LIB_DIR}
-  BUILD_COMMAND     ${CMAKE_BUILD_TOOL} -j
+                    ${APPLE_SDKROOT_ENV}
+  BUILD_COMMAND     ${CMAKE_BUILD_TOOL} -j ${APPLE_SDKROOT_ENV}
   BUILD_BYPRODUCTS  ${CMAKE_CURRENT_BINARY_DIR}/lib/libpbc.a
   INSTALL_COMMAND   ${CMAKE_BUILD_TOOL} install
   )
