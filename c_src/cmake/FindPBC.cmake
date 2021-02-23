@@ -6,6 +6,8 @@ if(CMAKE_BUILD_TYPE)
   string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE_UC)
 endif()
 
+get_target_property(GMP_LIB_DIR GMP::gmp IMPORTED_DIRECTORY)
+
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
   GIT_REPOSITORY    https://github.com/Vagabond/pbc
@@ -23,10 +25,10 @@ ExternalProject_Add(pbc
                     CC=${CMAKE_C_COMPILER}
                     CFLAGS=${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}
                     CPPFLAGS=-I${GMP_INCLUDE_DIR}
-                    LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/lib
-  BUILD_COMMAND     make -j
+                    LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/lib\ -L${GMP_LIB_DIR}
+  BUILD_COMMAND     ${CMAKE_BUILD_TOOL} -j
   BUILD_BYPRODUCTS  ${CMAKE_CURRENT_BINARY_DIR}/lib/libpbc.a
-  INSTALL_COMMAND   make install
+  INSTALL_COMMAND   ${CMAKE_BUILD_TOOL} install
   )
 
 # Hack to let us declare a not-yet-existing include path below.

@@ -68,8 +68,10 @@ if(GMP_FOUND)
   # C library
   if(NOT TARGET GMP::gmp)
     add_library(GMP::gmp UNKNOWN IMPORTED)
+    get_filename_component(GMP_LIB_DIR ${GMP_LIB} DIRECTORY)
     set_target_properties(GMP::gmp PROPERTIES
       IMPORTED_LOCATION ${GMP_LIB}
+      IMPORTED_DIRECTORY ${GMP_LIB_DIR}
       INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
       )
   endif()
