@@ -9,7 +9,7 @@ endif()
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
   GIT_REPOSITORY    https://github.com/Vagabond/pbc
-  GIT_TAG           cbe5718309e2c34345a35eb76731fb81122f0d79
+  GIT_TAG           ddd8ce61b203a692cbf5cb4bc14886b85e828e5f
   UPDATE_COMMAND    ""
   BUILD_IN_SOURCE   1
   CONFIGURE_COMMAND autoreconf --install > /dev/null 2>&1 || autoreconf &&
