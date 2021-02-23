@@ -16,11 +16,11 @@ IF (APPLE)
     execute_process(COMMAND
       xcrun --show-sdk-path
       OUTPUT_VARIABLE APPLE_SDK_ROOT
-      )
+    )
   else()
      set(APPLE_SDK_ROOT $ENV{SDKROOT})
   endif()
-  set(GF_APPLE_ENV "SDKROOT=${APPLE_SDK_ROOT}")
+  set(APPLE_SDKROOT_ENV "SDKROOT=${APPLE_SDK_ROOT}")
 ENDIF()
 
 #
