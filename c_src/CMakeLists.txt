@@ -1,7 +1,7 @@
 ##########################################################################
 # Project Setup                                                          #
 ##########################################################################
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.11)
 
 if(DEFINED ENV{CMAKE_TOOLCHAIN_FILE})
   set(CMAKE_TOOLCHAIN_FILE $ENV{CMAKE_TOOLCHAIN_FILE})
