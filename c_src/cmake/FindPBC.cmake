@@ -8,9 +8,8 @@ endif()
 
 get_target_property(GMP_LIB_DIR GMP::gmp IMPORTED_DIRECTORY)
 
-if(DEFINED ENV{CONFIGURE_ARGS})
-  string(REPLACE " " ";" CONFIGURE_ARGS $ENV{CONFIGURE_ARGS})
-endif()
+set(CONFIGURE_ARGS $ENV{CONFIGURE_ARGS})
+separate_arguments(CONFIGURE_ARGS)
 
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
