@@ -8,6 +8,10 @@ endif()
 
 get_target_property(GMP_LIB_DIR GMP::gmp IMPORTED_DIRECTORY)
 
+if(DEFINED ENV{CONFIGURE_ARGS})
+  string(REPLACE " " ";" CONFIGURE_ARGS $ENV{CONFIGURE_ARGS})
+endif()
+
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
   GIT_REPOSITORY    https://github.com/Vagabond/pbc
@@ -21,7 +25,7 @@ ExternalProject_Add(pbc
                     --disable-shared
                     --enable-optimized
                     --enable-safe-clean
-                    $ENV{CONFIGURE_ARGS}
+                    ${CONFIGURE_ARGS}
                     CC=${CMAKE_C_COMPILER}
                     CFLAGS=${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}
                     CPPFLAGS=-I${GMP_INCLUDE_DIR}
