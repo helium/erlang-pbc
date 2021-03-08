@@ -8,6 +8,13 @@ endif()
 
 get_target_property(GMP_LIB_DIR GMP::gmp IMPORTED_DIRECTORY)
 
+set(CONFIGURE_ARGS $ENV{CONFIGURE_ARGS})
+separate_arguments(CONFIGURE_ARGS)
+
+set(CONFIGURE_CFLAGS   "$ENV{CFLAGS}   ${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}")
+set(CONFIGURE_CPPFLAGS "$ENV{CPPFLAGS} -I${GMP_INCLUDE_DIR}")
+set(CONFIGURE_LDFLAGS  "$ENV{LDFLAGS}  -L${CMAKE_CURRENT_BINARY_DIR}/lib\ -L${GMP_LIB_DIR}")
+
 ExternalProject_Add(pbc
   PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/external-pbc
   GIT_REPOSITORY    https://github.com/Vagabond/pbc
@@ -21,11 +28,11 @@ ExternalProject_Add(pbc
                     --disable-shared
                     --enable-optimized
                     --enable-safe-clean
-                    $ENV{CONFIGURE_ARGS}
+                    ${CONFIGURE_ARGS}
                     CC=${CMAKE_C_COMPILER}
-                    CFLAGS=${CMAKE_C_FLAGS_${BUILD_TYPE_UC}}
-                    CPPFLAGS=-I${GMP_INCLUDE_DIR}
-                    LDFLAGS=-L${CMAKE_CURRENT_BINARY_DIR}/lib\ -L${GMP_LIB_DIR}
+                    CFLAGS=${CONFIGURE_CFLAGS}
+                    CPPFLAGS=${CONFIGURE_CPPFLAGS}
+                    LDFLAGS=${CONFIGURE_LDFLAGS}
                     ${APPLE_SDKROOT_ENV}
   BUILD_COMMAND     ${CMAKE_BUILD_TOOL} -j ${APPLE_SDKROOT_ENV}
   BUILD_BYPRODUCTS  ${CMAKE_CURRENT_BINARY_DIR}/lib/libpbc.a
